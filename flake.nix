@@ -1,5 +1,5 @@
 {
-  description = "Python project that merges Nix site-packages into a local venv";
+  description = "Onvif camera Python project, (unfortunately) merges Nix site-packages into a local venv";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -13,7 +13,7 @@
       myOverlay = final: prev: {
         python3_12 = prev.python312.override {
           packageOverrides = pySelf: pySuper: {
-            # ... your custom overrides if any ...
+            # Custom overrides go here
           };
         };
 
@@ -32,7 +32,8 @@
         # Nix-provided Python + packages
         packages = [
           (pkgs.python3.withPackages (p: [
-            # Example: Nix packages you want accessible from the venv
+            # Nix packages you want accessible from the venv
+            p.wsdiscovery
             p.onvif-zeep
             p.opencv-python
             p.accelerate
@@ -41,6 +42,7 @@
           ]))
         ];
 
+        # Not great! But ... 
         shellHook = ''
           echo "System Python (Nix): $(which python)"
           echo "System Python (Nix) version: $(python --version)"
@@ -100,150 +102,3 @@
   );
 }
 
-
-# {
-#   description = "Python project with a local venv that inherits Nix packages";
-
-#   inputs = {
-#     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-#     flake-utils.url = "github:numtide/flake-utils";
-#   };
-
-#   outputs = { self, nixpkgs, flake-utils }:
-#     flake-utils.lib.eachDefaultSystem (system:
-#     let
-#       myOverlay = final: prev: {
-#         python3_12 = prev.python312.override {
-#           packageOverrides = pySelf: pySuper: {
-#             # If you need custom overrides, do them here...
-#           };
-#         };
-#         # Alias "python3" → python3_12
-#         python3 = final.python3_12;
-#       };
-
-#       pkgs = import nixpkgs {
-#         inherit system;
-#         overlays = [ myOverlay ];
-#       };
-#     in
-#     {
-#       devShells.default = pkgs.mkShell {
-#         packages = [
-#           (pkgs.python3.withPackages (p: [
-#             # Nix-provided packages
-#             p.onvif-zeep
-#             p.opencv-python
-#             # Omit torch from here if you want the PyPI version
-#           ]))
-#         ];
-
-#         shellHook = ''
-#           echo "System python (Nix) path: $(which python)"
-#           echo "System python (Nix) version: $(python --version)"
-
-#           # Remove existing .venv if it's for a different Python version
-#           # (Optional safety step)
-#           if [ -d .venv ]; then
-#             venv_python_version=$(.venv/bin/python -c "import sys; print(sys.version_info[:2])" 2>/dev/null || echo "none")
-#             nix_python_version=$(python -c "import sys; print(sys.version_info[:2])")
-#             if [ "$venv_python_version" != "$nix_python_version" ]; then
-#               echo "Removing old .venv (Python $venv_python_version != Nix $nix_python_version)..."
-#               rm -rf .venv
-#             fi
-#           fi
-
-#           # Create .venv if needed, INHERITING system site-packages
-#           if [ ! -d .venv ]; then
-#             echo "Creating .venv with --system-site-packages..."
-#             $(which python) -m venv .venv --system-site-packages
-#           fi
-
-#           # Activate the venv
-#           source .venv/bin/activate
-
-#           # Now we can see Nix-installed packages (cv2, onvif-zeep, etc.)
-#           # AND we can pip-install anything extra:
-#           if ! python -c "import torch" 2>/dev/null; then
-#             echo "Installing PyTorch from PyPI..."
-#             pip install --upgrade pip
-#             pip install torch torchvision torchaudio transformers
-#           fi
-
-#           echo "Activated venv python: $(which python)"
-#           echo "Activated venv python version: $(python --version)"
-#         '';
-#       };
-#     }
-#   );
-# }
-
-#   # {
-# #   description = "Python project with an overlay for moderngl and auto-activated venv for PyTorch";
-
-# #   inputs = {
-# #     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-# #     flake-utils.url = "github:numtide/flake-utils";
-# #   };
-
-# #   outputs = { self, nixpkgs, flake-utils }:
-# #     flake-utils.lib.eachDefaultSystem (system:
-# #     let
-# #       # Overlay that adjusts python3_12 (if you have custom overrides)
-# #       myOverlay = final: prev: {
-# #         python3_12 = prev.python312.override {
-# #           packageOverrides = pySelf: pySuper: {
-# #             # Example only: override or define custom packages
-# #             # moderngl = ...
-# #           };
-# #         };
-
-# #         # Alias python3 -> python3_12 for convenience
-# #         python3 = final.python3_12;
-# #       };
-
-# #       pkgs = import nixpkgs {
-# #         inherit system;
-# #         overlays = [ myOverlay ];
-# #       };
-# #     in {
-# #       devShells.default = pkgs.mkShell {
-# #         name = "my-devshell";
-
-# #         # Provide a base Python + some packages from Nix
-# #         packages = [
-# #           (pkgs.python3.withPackages (p: [
-# #             p.onvif-zeep
-# #             p.opencv-python   # if you want OpenCV from Nix
-# #             p.transformers
-# #             # Omit p.torch, p.torchvision, p.torchaudio, p.accelerate
-# #             # so they don't conflict with the PyPI versions in the .venv
-# #           ]))
-# #         ];
-
-# #         shellHook = ''
-# #           echo "Using system Python from Nix: $(which python)"
-# #           echo "Python version: $(python --version)"
-
-# #           # 1) Create a local .venv if it doesn't exist
-# #           if [ ! -d .venv ]; then
-# #             echo "Creating local virtual environment in .venv..."
-# #             python -m venv .venv
-# #           fi
-
-# #           # 2) Activate the venv
-# #           source .venv/bin/activate
-
-# #           # 3) Install PyTorch packages from PyPI if they're not already in the venv
-# #           if ! python -c "import torch" 2>/dev/null; then
-# #             echo "Installing PyTorch & friends from PyPI into .venv..."
-# #             pip install --upgrade pip
-# #             pip install torch torchvision torchaudio accelerate opencv-python
-# #           fi
-
-# #           echo "Virtualenv is now active. Python: $(which python)"
-# #         '';
-# #       };
-# #     }
-# #   );
-# # }

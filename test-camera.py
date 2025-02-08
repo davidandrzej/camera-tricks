@@ -2,24 +2,22 @@ import cv2
 import time
 from onvif import ONVIFCamera
 from urllib.parse import urlparse, urlunparse
+import getpass
 
 def main():
     # Replace these details with your camera’s network details
     camera_host = "10.0.0.153"   # IP address of the camera
     camera_port = 80               # Usually 80, 8080, or 8999 for ONVIF
     camera_user = "thingino"          # ONVIF username
-    camera_pass = "47CmrXHZzejX"          # ONVIF password
+    camera_pass = getpass.getpass("ONVIF+RSTP pw for %s: " % camera_user) 
+    # NOTE: assuming the same pw for ONVIF and RSTP ... !
 
-    #print(ONVIFCamera('192.168.1.100', 80, '', '').wsdl_dir)
-    
     # Create an ONVIF camera object
     mycam = ONVIFCamera(
         camera_host,
         camera_port,
         camera_user,
         camera_pass
-#        wsdl_dir="/usr/local/lib/python3.8/site-packages/wsdl" 
-        # ^ Adjust this path to where your WSDL files are located (depending on your python environment)
     )
 
     media_service = mycam.create_media_service()

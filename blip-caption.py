@@ -2,6 +2,7 @@ import cv2
 import torch
 from transformers import Blip2Processor, Blip2ForConditionalGeneration
 from onvif import ONVIFCamera
+import getpass
 
 def main():
     # ------------------------------------------------------------------
@@ -10,7 +11,8 @@ def main():
     camera_host = "10.0.0.153"   # IP address of the camera
     camera_port = 80               # Usually 80, 8080, or 8999 for ONVIF
     camera_user = "thingino"          # ONVIF username
-    camera_pass = "47CmrXHZzejX"          # ONVIF password
+    camera_pass = getpass.getpass("ONVIF+RSTP pw for %s: " % camera_user) # ONVIF
+    # NOTE: assuming the same pw for ONVIF and RSTP ... !
 
     mycam = ONVIFCamera(camera_host, camera_port, camera_user, camera_pass)#wsdl_dir=wsdl_dir)
     media_service = mycam.create_media_service()
